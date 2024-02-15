@@ -183,7 +183,6 @@ def manhattan_distance(state, goal_state):
 
     # Function to perform A* search
 def a_star_search(initial_state):
-    goal_state = ['_', '1', '2', '3', '4', '5', '6', '7', '8']
     frontier = []
     heapq.heappush(frontier, (0, initial_state, []))  # (cost + heuristic, state, path)
     visited = set()
