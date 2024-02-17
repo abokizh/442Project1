@@ -4,7 +4,8 @@ from math import sqrt
 
 goal_state = ['_', '1', '2', '3', '4', '5', '6', '7', '8'] # declaring the goal state to solve the puzzle
 # We are using a DFS with depth limit for the 8-puzzle problem, due to computing time constraints. The limit can be modified by the user at any time.
-def dfs(initial_state, limit=10):
+
+def dfs(initial_state, limit=30):
     stack = [(initial_state, [], 0)]  # Stack includes state, path, and depth
     visited = set()
 
@@ -90,7 +91,7 @@ def format_solution_path(state, path):
 initial_state = read_input_file('input.txt')
 
 # Execute DFS with depth limit
-solution_path_dfs = dfs(initial_state, limit=40)
+solution_path_dfs = dfs(initial_state, limit=90)
 
 # If a solution is found, format it according to the project specifications
 if solution_path_dfs:
@@ -272,3 +273,149 @@ print(formatted_solution_output_bfs)
 print(formatted_solution_output_ucs)
 print(formatted_solution_output_a_star)
 print(formatted_solution_output_a_star_sld)
+
+#For questions 1.2 onwards just modify the previous code:
+'''
+def dfs_with_node_count(initial_state, limit=50):
+    stack = [(initial_state, [], 0)] 
+    visited = set()
+    node_expansions_dfs = 0  # Counter for the number of node expansions
+
+    while stack:
+        state, path, depth = stack.pop()
+        if depth > limit:
+            continue
+        if tuple(state) in visited:
+            continue
+        visited.add(tuple(state))
+        
+        # Increment node expansions when a new node is visited
+        node_expansions_dfs += 1
+
+        if state == goal_state:
+            return path, node_expansions_dfs  # Return the path and the number of node expansions
+
+        # Generate successors and add them to the stack
+        if depth < limit:
+            for move, new_state in get_successors(state):
+                # Add the new state to the stack if it's not visited
+                if tuple(new_state) not in visited:
+                    stack.append((new_state, path + [move], depth + 1))
+
+    # If no solution is found within the depth limit
+    return None, node_expansions_dfs
+
+dfs_solution, node_expansions_count_dfs = dfs_with_node_count(initial_state)
+print(f"Node Expansions DFS: {node_expansions_count_dfs}")
+
+def bfs_with_node_count(initial_state):
+    queue = deque([(initial_state, [])])  
+    visited = set() 
+    node_expansions = 0 
+
+    while queue:
+        current_state, path = queue.popleft() 
+        visited.add(tuple(current_state))  
+        if current_state == goal_state:
+            return path, node_expansions  
+        # Increment the node expansions counter when a node is expanded
+        node_expansions += 1
+
+        for move, new_state in get_successors(current_state):
+            if tuple(new_state) not in visited:
+                queue.append((new_state, path + [move]))  # Enqueue the new state
+
+    return None, node_expansions
+
+bfs_solution, node_expansions_count_bfs = bfs_with_node_count(initial_state)
+print(f"Node Expansions BFS: {node_expansions_count_bfs}")
+
+def ucs_with_node_count(initial_state):
+    frontier = [] 
+    heapq.heappush(frontier, (0, initial_state, [])) 
+    visited = set()
+    node_expansions = 0 
+
+    while frontier:
+        cost, state, path = heapq.heappop(frontier)
+
+        if tuple(state) in visited:
+            continue
+        visited.add(tuple(state))
+        
+        node_expansions += 1  # Increment the counter when a new node is visited
+
+        if state == goal_state:
+            return path, node_expansions  # Return the path and the number of node expansions
+
+        for move, new_state in get_successors(state):
+            if tuple(new_state) not in visited:
+                new_cost = cost + 1  # Each move costs 1
+                heapq.heappush(frontier, (new_cost, new_state, path + [move]))
+
+    return None, node_expansions  # If no solution is found
+
+ucs_solution, ucs_node_expansions = ucs_with_node_count(initial_state)
+print(f"Node Expansions UCS: {ucs_node_expansions}")
+
+def a_star_node_count_manhattan(initial_state):
+    frontier = [] 
+    heapq.heappush(frontier, (0, initial_state, []))  
+    visited = set()
+    cost_so_far = {tuple(initial_state): 0}
+    node_expansions = 0 
+
+    while frontier:
+        _, current_state, path = heapq.heappop(frontier)
+
+        if tuple(current_state) in visited:
+            continue
+        visited.add(tuple(current_state))
+
+        node_expansions += 1 
+
+        if current_state == goal_state:
+            return path, node_expansions  
+
+        for move, new_state in get_successors(current_state):
+            new_cost = cost_so_far[tuple(current_state)] + 1  # Each move costs 1
+            if tuple(new_state) not in visited or new_cost < cost_so_far.get(tuple(new_state), float('inf')):
+                cost_so_far[tuple(new_state)] = new_cost
+                priority = new_cost + manhattan_distance(new_state, goal_state)
+                heapq.heappush(frontier, (priority, new_state, path + [move]))
+
+    return None, node_expansions
+
+a_star_manhattan_solution, a_star_manhattan_node_expansions = a_star_node_count_manhattan(initial_state)
+print(f"Node Expansions A* Manhattan: {a_star_manhattan_node_expansions}")
+
+def a_star_node_count_sld(initial_state):
+    frontier = [] 
+    heapq.heappush(frontier, (0, initial_state, []))
+    visited = set()
+    cost_so_far = {tuple(initial_state): 0}
+    node_expansions = 0 
+
+    while frontier:
+        _, current_state, path = heapq.heappop(frontier)
+
+        if tuple(current_state) in visited:
+            continue
+        visited.add(tuple(current_state))
+
+        node_expansions += 1 
+
+        if current_state == goal_state:
+            return path, node_expansions 
+        for move, new_state in get_successors(current_state):
+            new_cost = cost_so_far[tuple(current_state)] + 1  # Each move costs 1
+            if tuple(new_state) not in visited or new_cost < cost_so_far.get(tuple(new_state), float('inf')):
+                cost_so_far[tuple(new_state)] = new_cost
+                priority = new_cost + straight_line_distance(new_state, goal_state)
+                heapq.heappush(frontier, (priority, new_state, path + [move]))
+
+    return None, node_expansions
+a_star_sld_solution, a_star_sld_node_expansions = a_star_node_count_sld(initial_state)
+print(f"Node Expansions A* SLD: {a_star_sld_node_expansions}")
+
+'''
