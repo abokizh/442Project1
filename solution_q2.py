@@ -4,29 +4,29 @@ from math import sqrt
 
 class Board:
 
-	# Possible swaps for different boards with different '_' index
+	# Possible swaps for different boards with different '_' index U -> L -> D -> R
 	possible_swaps = {
 		0: [1,3],
 		1: [0,2,4],
 		2: [1,5],
 		3: [0,4,6],
-		4: [3,5,1,7],
-		5: [2,4,8],
+		4: [3,1,5,7],
+		5: [4,2,8],
 		6: [3,7],
-		7: [4,6,8],
-		8: [5,7],
+		7: [6,4,8],
+		8: [7,5],
 	}
-	# Possible swaps and their "real world name"
+	# Possible swaps and their "real world name" U -> L -> D -> R
 	possible_moves = {
-		0: {1:"Right",3:"Down"},
-		1: {0:"Left",2:"Right",4:"Down"},
-		2: {1:"Left",5:"Down"},
-		3: {0:"Up",4:"Right",6:"Down"},
-		4: {3:"Left",5:"Right",1:"Up",7:"Down"},
-		5: {2:"Up",4:"Left",8:"Down"},
-		6: {3:"Up",7:"Right"},
-		7: {4:"Up",6:"Left",8:"Right"},
-		8: {5:"Up",7:"Left"},
+		0: {3:"U",1:"L"},
+		1: {4:"U",0:"R",2:"L"},
+		2: {5:"U",1:"R"},
+		3: {6:"U",0:"D",4:"L"},
+		4: {7:"U",1:"D",3:"R",5:"L"},
+		5: {8:"U",2:"D",4:"R"},
+		6: {3:"D",7:"L"},
+		7: {4:"D",6:"R",8:"L"},
+		8: {5:"D",7:"R"},
 	} 
 	# All possible goal states  ("x" is any number, because we only care about the first row)
 	possible_goals = [
@@ -49,8 +49,8 @@ class Board:
 		children = []
 		for idx, i in enumerate(state):
 			if i == "_":
-				for swapIdx in self.possible_swaps[idx]:
-					children.append([self.swap(state, idx, swapIdx), self.possible_moves[idx][swapIdx]])
+				for swapIdx in self.possible_swaps[idx]: 
+					children.append([self.swap(state, idx, swapIdx), state[swapIdx]+self.possible_moves[idx][swapIdx]])
 		return children
 
 	# Swap empty cell with given adjecent cell
@@ -82,15 +82,19 @@ class Board:
 		initial_state = self.board.copy()
 		stack = [(initial_state, [], 0)]  # Stack includes state, path, and depth
 		visited = set()
-
+		ex = 0 # expansions counter
 		while stack:
 			state, path, depth = stack.pop()
 	        
 			visited.add(tuple(state))
 	        
 			if self.is_goal_state(state):
-				return path  # Return the path to the goal state
-	        
+				#print(ex)
+				if path != []:
+					return ','.join(path)  # Return the path to the goal state
+				else:
+					return "Already solved!"
+			ex += 1
 			for new_state, move in self.expand(state):
 				if tuple(new_state) not in visited:
 					stack.append((new_state, path + [move], depth + 1))  # Increase depth
@@ -102,13 +106,18 @@ class Board:
 		initial_state = self.board.copy()
 		queue = deque([(initial_state, [])])
 		visited = set()
-
+		ex = 0 # expansions counter
 		while queue:
 			state, path = queue.popleft()
 			visited.add(tuple(state))
 
 			if self.is_goal_state(state):
-				return path  # Return the path to the goal state
+				#print(ex)
+				if path != []:
+					return ','.join(path)  # Return the path to the goal state
+				else:
+					return "Already solved!"
+			ex += 1
 			for new_state, move in self.expand(state):
 				if tuple(new_state) not in visited:
 					queue.append((new_state, path + [move]))  # Add to queue with the move taken
@@ -120,14 +129,18 @@ class Board:
 		frontier = []  # Priority queue
 		heapq.heappush(frontier, (0, initial_state, []))  # (cost, state, path)
 		visited = set()
-
+		ex = 0 # expansions counter
 		while frontier:
 			cost, state, path = heapq.heappop(frontier)
 			visited.add(tuple(state))
 			
 			if self.is_goal_state(state):
-				return path  # Return the path to the goal state
-
+				#print(ex)
+				if path != []:
+					return ','.join(path)  # Return the path to the goal state
+				else:
+					return "Already solved!"
+			ex+=1
 			for new_state, move in self.expand(state):
 				if tuple(new_state) not in visited:
 					new_cost = cost + 1  # Each move costs 1
@@ -137,7 +150,7 @@ class Board:
 
 	# Function to calculate the Manhattan distance heuristic for a state
 	def manhattan_distance(self, state):
-		min_distance = 99999999999
+		min_distance = float('inf')
 		# Loop through different goal states
 		for goal_state in self.possible_goals:
 			distance = 0
@@ -159,14 +172,18 @@ class Board:
 		heapq.heappush(frontier, (0, initial_state, []))  # (cost + heuristic, state, path)
 		visited = set()
 		cost_so_far = {tuple(initial_state): 0}  # Cost from start to the node
-
+		ex=0 # expansions counter
 		while frontier:
 			_, current_state, path = heapq.heappop(frontier)
 			visited.add(tuple(current_state))
 
 			if self.is_goal_state(current_state):
-				return path  # Return the path to the goal state
-
+				#print(ex)
+				if path != []:
+					return ','.join(path)  # Return the path to the goal state
+				else:
+					return "Already solved!"
+			ex += 1
 			for new_state, move in self.expand(current_state):
 				new_cost = cost_so_far[tuple(current_state)] + 1  # Assume cost for each move is 1
 				if tuple(new_state) not in visited or new_cost < cost_so_far.get(tuple(new_state), float('inf')):
@@ -178,7 +195,7 @@ class Board:
 
 	# Define the Straight Line Distance (Euclidean distance) heuristic function
 	def straight_line_distance(self, state):
-		min_distance = 99999999999
+		min_distance = float('inf')
 		# Loop through different goal states
 		for goal_state in self.possible_goals:
 			dist = 0 # To count distance
@@ -202,14 +219,18 @@ class Board:
 		heapq.heappush(frontier, (0, initial_state, []))  # (cost + heuristic, state, path)
 		visited = set()
 		cost_so_far = {tuple(initial_state): 0}  # Cost from start to the node
-
+		ex = 0 # expansions counter
 		while frontier:
 			_, current_state, path = heapq.heappop(frontier)
 			visited.add(tuple(current_state))
 
 			if self.is_goal_state(current_state):
-				return path  # Return the path to the goal state
-
+				#print(ex)
+				if path != []:
+					return ','.join(path)  # Return the path to the goal state
+				else:
+					return "Already solved!"
+			ex += 1
 			for new_state, move in self.expand(current_state):
 				new_cost = cost_so_far[tuple(current_state)] + 1  # Assume cost for each move is 1
 				if tuple(new_state) not in visited or new_cost < cost_so_far.get(tuple(new_state), float('inf')):
@@ -228,8 +249,8 @@ def read_input_file(file_path):
 initial_state = read_input_file('input.txt')
 
 board = Board(initial_state)
-print(board.dfs())
-print(board.bfs())
-print(board.ucs())
-print(board.a_star_search())
-print(board.a_star_search_sld())
+print(f"The solution of Q2.1.a(DFS) is:\n"+board.dfs()+"\n")
+print(f"The solution of Q2.1.b(BFS) is:\n"+board.bfs()+"\n")
+print(f"The solution of Q2.1.c(UCS) is:\n"+board.ucs()+"\n")
+print(f"The solution of Q2.1.d(A* Manhattan Distance) is:\n"+board.a_star_search()+"\n")
+print(f"The solution of Q2.1.e(A* Straight Line Distance) is:\n"+board.a_star_search_sld()+"\n")
